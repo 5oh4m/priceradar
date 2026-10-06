@@ -101,3 +101,39 @@ test("manual seed offers attach to a matching store row with no scraped text", (
   assert.ok(icici.termsUrl, "seed offers carry a source URL");
   assert.equal(icici.discountType, "PERCENT");
 });
+
+test("a marketplace's verbose title merges with a retailer's terse title", () => {
+  // Amazon appends marketing copy after a colon; Reliance/Vijay Sales don't.
+  // Both must resolve to the same canonical variant, or Amazon sits in its own
+  // one-row block and there is nothing to compare.
+  const listings = [
+    L("amazon_in",
+      "iPhone 16 128 GB: 5G Mobile Phone with Camera Control, A18 Chip and a Big Boost in Battery Life; White",
+      89900),
+    L("reliance_digital", "Apple iPhone 16 128GB White", 79900),
+    L("vijay_sales", "Apple iPhone 16 128 GB White", 78900),
+  ];
+  const { results } = classify("iphone 16 128 gb", listings);
+
+  const block = results.find((p) => p.offers.some((o) => o.storeSlug === "amazon_in"));
+  assert.ok(block, "Amazon produced a block");
+  assert.equal(
+    block.offers.length,
+    3,
+    `all three stores share one block, got: ${block.offers.map((o) => o.storeSlug).join(",")}`
+  );
+  assert.equal(block.offers[0].storeSlug, "vijay_sales", "cheapest leads the block");
+});
+
+test("Amazon sponsored-ad titles are rejected", () => {
+  const listings = [
+    L("amazon_in", "Sponsored Ad - Apple iPhone 16 128GB White", 99900),
+    L("reliance_digital", "Apple iPhone 16 128GB White", 79900),
+  ];
+  const { results } = classify("iphone 16 128 gb", listings);
+  const all = results.flatMap((p) => p.offers);
+  assert.ok(
+    !all.some((o) => o.listed === 99900),
+    "a title still carrying the sponsored marker must not become an offer"
+  );
+});

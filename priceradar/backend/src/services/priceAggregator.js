@@ -115,6 +115,9 @@ export function classify(query, listings) {
 
   for (const listing of relevant) {
     if (!listing || !listing.title || !(Number(listing.price) > 0)) continue;
+    // Scrapers strip ad markers, but a regression there must not put a
+    // sponsored placement into the comparison as if it were an organic price.
+    if (/^\s*sponsored(\s+ad)?\b/i.test(listing.title)) continue;
     const norm = normalizeTitle(listing.title);
     const rec = { listing, norm };
     const conflictKey = attrsConflict(intent.attrs, norm.attrs);
@@ -130,17 +133,54 @@ export function classify(query, listings) {
 }
 
 function assembleProducts(recs, reviewQueue) {
-  // ── bucket by canonical variant key ────────────────────────────────────
-  const buckets = new Map();
+  // ── bucket by canonical variant ────────────────────────────────────────
+  //
+  // Coarse key is brand + model slug only. Splitting on attributes happens
+  // below via attrsConflict, because stores describe the same product with
+  // different amounts of detail: Amazon's title says "5G" where Reliance's
+  // doesn't. Treating "unstated" as its own value would put the same phone in
+  // two blocks and leave nothing to compare. Conflicting values still never
+  // merge — that is the hard gate.
+  const coarse = new Map();
   for (const { listing, norm } of recs) {
-    let key = buildVariantKey({ brand: norm.brand, slug: norm.slug, attrs: norm.attrs });
+    let key = `${norm.brand || "?"}|${norm.slug || "?"}`;
     if (!norm.slug || norm.slug.length < 2) {
-      // degenerate slug — fall back to a fuzzy signature so we never crash,
-      // but still never merge across the hard-gate attributes above.
-      key += "|~" + fuzzySignature(norm.clean, buckets);
+      key += "|~" + fuzzySignature(norm.clean, coarse);
     }
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push({ listing, norm });
+    if (!coarse.has(key)) coarse.set(key, []);
+    coarse.get(key).push({ listing, norm });
+  }
+
+  const buckets = new Map();
+  for (const [coarseKey, group] of coarse) {
+    // Most-specific listings first, so well-described variants establish the
+    // buckets before a vague title gets absorbed into one of them.
+    const ordered = [...group].sort(
+      (a, b) => Object.keys(b.norm.attrs).length - Object.keys(a.norm.attrs).length
+    );
+
+    const subs = []; // [{ attrs, members }]
+    for (const rec of ordered) {
+      const fit = subs.find((sub) => attrsConflict(sub.attrs, rec.norm.attrs) === null);
+      if (fit) {
+        fit.members.push(rec);
+        // an unknown on the bucket is filled in by whoever does state it
+        for (const [k, v] of Object.entries(rec.norm.attrs)) {
+          if (fit.attrs[k] === undefined) fit.attrs[k] = v;
+        }
+      } else {
+        subs.push({ attrs: { ...rec.norm.attrs }, members: [rec] });
+      }
+    }
+
+    subs.forEach((sub, i) => {
+      const key = buildVariantKey({
+        brand: sub.members[0].norm.brand,
+        slug: sub.members[0].norm.slug,
+        attrs: sub.attrs,
+      });
+      buckets.set(buckets.has(key) ? `${key}#${i}` : key, sub.members);
+    });
   }
 
   const products = [];

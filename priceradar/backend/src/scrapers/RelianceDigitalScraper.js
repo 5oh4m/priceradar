@@ -46,9 +46,14 @@ export class RelianceDigitalScraper extends BaseScraper {
             ? `https://www.reliancedigital.in/product/${item.slug}`
             : `https://www.reliancedigital.in/search?q=${encodeURIComponent(query)}`;
 
-          // Image from variant_media or description images
+          // Images live on `item.medias` — an array of { type, url, alt }.
+          // `attributes.variant_media` is present but almost always empty, so it
+          // is only a fallback.
+          const medias = Array.isArray(item.medias) ? item.medias : [];
+          const firstMedia = medias.find((m) => m?.type === "image" && m?.url) || medias.find((m) => m?.url);
           const variantMedia = attrs.variant_media || {};
-          const imageUrl = Object.values(variantMedia)?.[0]?.[0]?.url || null;
+          const imageUrl =
+            firstMedia?.url || Object.values(variantMedia)?.[0]?.[0]?.url || null;
 
           return {
             title,

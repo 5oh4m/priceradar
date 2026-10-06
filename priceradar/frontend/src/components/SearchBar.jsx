@@ -3,6 +3,7 @@ import { searchProducts } from "../api/client.js";
 
 export default function SearchBar({ onResults, onLoading, onError, preset }) {
   const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
   const lastPreset = useRef(null);
 
   async function run(term) {
@@ -10,6 +11,7 @@ export default function SearchBar({ onResults, onLoading, onError, preset }) {
     if (!q) return;
     onError(null);
     onLoading(true);
+    setBusy(true);
     try {
       const data = await searchProducts(q);
       onResults(data);
@@ -17,6 +19,7 @@ export default function SearchBar({ onResults, onLoading, onError, preset }) {
       onError(err.response?.data?.error || "Search failed. Is the backend running?");
     } finally {
       onLoading(false);
+      setBusy(false);
     }
   }
 
@@ -43,7 +46,9 @@ export default function SearchBar({ onResults, onLoading, onError, preset }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <button type="submit">Search</button>
+      <button type="submit" data-busy={busy}>
+        {busy ? "Searching" : "Search"}
+      </button>
     </form>
   );
 }

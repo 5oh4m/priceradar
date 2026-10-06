@@ -9,11 +9,41 @@
  * and row-selection logic live in ../lib so they can be unit-tested.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { inr } from "../lib/effectivePrice.js";
 import { selectRows } from "../lib/compare.js";
 
-export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack }) {
+/**
+ * Fixed-size image box. A URL that 404s or is blocked falls back to the same
+ * neutral placeholder an absent URL gets, so the block never collapses and
+ * never shows a broken-image icon. The image fades in once decoded.
+ */
+function Thumb({ src, alt }) {
+  const [status, setStatus] = useState(src ? "loading" : "empty");
+
+  // A new product in the same slot must reset the state.
+  useEffect(() => setStatus(src ? "loading" : "empty"), [src]);
+
+  return (
+    <div className="thumb">
+      {status !== "empty" && (
+        <img
+          src={src}
+          alt={alt || ""}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className={status === "ready" ? "is-ready" : ""}
+          onLoad={() => setStatus("ready")}
+          onError={() => setStatus("empty")}
+        />
+      )}
+      {status !== "ready" && <span className="ph">{status === "empty" ? "no image" : ""}</span>}
+    </div>
+  );
+}
+
+export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack, index = 0 }) {
   const [expanded, setExpanded] = useState(() => new Set());
 
   const { rows, winner, spread } = useMemo(
@@ -32,15 +62,9 @@ export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack 
     });
 
   return (
-    <section className="block">
+    <section className="block block-enter" style={{ "--i": Math.min(index, 12) }}>
       <div className="block-head">
-        <div className="thumb">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt="" loading="lazy" />
-          ) : (
-            <span className="ph">no image</span>
-          )}
-        </div>
+        <Thumb src={product.imageUrl} alt={product.title} />
 
         <div className="block-id">
           <h2 className="p-title">{product.title}</h2>
@@ -63,7 +87,7 @@ export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack 
 
         <div className="headline">
           <span className="lbl">Best effective price</span>
-          <div className="big">{inr(winner.price.effective)}</div>
+          <div className="big" key={winner.price.effective}>{inr(winner.price.effective)}</div>
           {winner.price.effective !== winner.price.listed && (
             <div className="strike">{inr(winner.price.listed)} listed</div>
           )}
@@ -161,7 +185,7 @@ export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack 
                   </td>
 
                   <td className={`eff num${isWinner ? " win" : ""}`}>
-                    {inr(price.effective)}
+                    <span className="eff-val" key={price.effective}>{inr(price.effective)}</span>
                     <span className="delta">
                       {isWinner ? "cheapest" : `+${inr(price.effective - winner.price.effective)}`}
                     </span>
@@ -183,7 +207,8 @@ export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack 
                 open && price.alternatives.length > 0 && (
                   <tr key={`${key}-detail`} className="detail-row">
                     <td colSpan={6}>
-                      <div className="detail-box">
+                      <div className="detail-reveal">
+                       <div className="detail-box">
                         <h4>Other offers at {offer.storeName} — only one applies per transaction</h4>
                         <ul>
                           {price.alternatives.map((o) => (
@@ -202,6 +227,7 @@ export function ComparisonBlock({ product, wallet, sortBy, inStockOnly, onTrack 
                             </li>
                           ))}
                         </ul>
+                       </div>
                       </div>
                     </td>
                   </tr>

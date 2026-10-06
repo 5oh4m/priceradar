@@ -5,10 +5,15 @@ import { chromium } from "playwright";
  * interface so the aggregator doesn't care which site it's talking to.
  */
 export class BaseScraper {
-  constructor({ source, headless = true, timeoutMs = 15000 }) {
+  constructor({ source, headless = true, timeoutMs = 15000, allowBrowserFallback = true }) {
     this.source = source;
     this.headless = headless;
     this.timeoutMs = timeoutMs;
+    // Adapters whose Playwright fallback is known not to work (the site blocks
+    // headless browsers, or its host doesn't resolve) set this false so a
+    // failed API call returns immediately instead of spending the whole
+    // per-store timeout launching a browser for nothing.
+    this.allowBrowserFallback = allowBrowserFallback;
   }
 
   async withBrowser(fn) {

@@ -59,6 +59,7 @@ export class CromaScraper extends BaseScraper {
 
   /** Fallback: use Playwright for scraping if the API fails */
   async _fallbackSearch(query) {
+    if (!this.allowBrowserFallback) return [];
     return this.withBrowser(async (page) => {
       const searchUrl = `https://www.croma.com/searchB?q=${encodeURIComponent(query)}&text=${encodeURIComponent(query)}`;
       await page.goto(searchUrl, { waitUntil: "networkidle" });

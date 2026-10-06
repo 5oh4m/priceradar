@@ -272,3 +272,140 @@ td.eff.win { color: var(--good); }
   margin-left: 6px; color: var(--accent); font-size: 0.72rem;
   text-decoration: underline;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Motion
+   Every animation here is decorative. The reduced-motion block at the
+   bottom turns all of it off in one place.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes blockIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.992); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes priceIn {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes chipPop {
+  50% { transform: scale(1.06); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* results: staggered entrance, capped so a long list never lags */
+.block-enter {
+  opacity: 0;
+  animation: blockIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+.block {
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+.block:hover {
+  border-color: var(--line-2);
+  box-shadow: 0 10px 28px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* headline + row prices re-animate whenever the number itself changes
+   (React remounts them via key), so a wallet or sort change is visible */
+.headline .big { animation: priceIn 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+.eff-val { display: inline-block; animation: priceIn 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* product image fades in once decoded */
+.thumb img { opacity: 0; transition: opacity 0.35s ease; }
+.thumb img.is-ready { opacity: 1; }
+.thumb .ph { transition: opacity 0.2s ease; }
+
+/* table rows */
+.block tbody tr { transition: background-color 0.18s ease; }
+.block tbody tr:hover { background: #ffffff08; }
+.block tbody tr.best:hover { background: #4ade8018; }
+
+/* expandable bank-offer detail: 0fr -> 1fr animates cleanly with no fixed height */
+.detail-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  animation: revealRows 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.detail-reveal > .detail-box { overflow: hidden; min-height: 0; }
+@keyframes revealRows { to { grid-template-rows: 1fr; } }
+.detail-box li { animation: fadeUp 0.28s ease backwards; }
+.detail-box li:nth-child(2) { animation-delay: 0.05s; }
+.detail-box li:nth-child(3) { animation-delay: 0.1s; }
+.detail-box li:nth-child(n + 4) { animation-delay: 0.14s; }
+
+/* interactive bits */
+.buy, .search-bar button, .empty-chip, .fb-chip {
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+.buy:hover, .search-bar button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -8px var(--accent); }
+.buy:active, .search-bar button:active, .fb-chip:active, .empty-chip:active { transform: translateY(0) scale(0.97); }
+.fb-chip:hover, .empty-chip:hover { transform: translateY(-1px); }
+.fb-chip.on { animation: chipPop 0.26s ease; }
+
+.offer-chip { transition: border-color 0.18s ease, background-color 0.18s ease; }
+tr:hover .offer-chip { border-color: var(--accent); }
+
+.offer-extra, .link-btn, .terms { transition: color 0.15s ease, opacity 0.15s ease; }
+.offer-extra:hover, .link-btn:hover { opacity: 0.75; }
+
+.badge-best { animation: chipPop 0.4s ease 0.2s backwards; }
+.attr { transition: border-color 0.18s ease, color 0.18s ease; }
+.block:hover .attr { border-color: var(--line-2); }
+
+.store-logo { transition: transform 0.2s ease; }
+tr:hover .store-logo { transform: scale(1.08) rotate(-3deg); }
+
+/* page furniture */
+.toast { animation: toastIn 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.store-error-chip { animation: fadeUp 0.3s ease backwards; }
+.empty { animation: fadeUp 0.35s ease; }
+.empty-chip { animation: fadeUp 0.3s ease backwards; }
+.empty-chip:nth-child(2) { animation-delay: 0.06s; }
+.empty-chip:nth-child(3) { animation-delay: 0.12s; }
+.empty-chip:nth-child(4) { animation-delay: 0.18s; }
+.other-variants { animation: fadeUp 0.4s ease; }
+.freshness { animation: fadeUp 0.3s ease; }
+.filter-bar {
+  animation: fadeUp 0.3s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.filter-bar:hover { border-color: var(--line-2); }
+
+/* search button busy state */
+.search-bar button[data-busy="true"] { pointer-events: none; opacity: 0.75; }
+.search-bar button[data-busy="true"]::after {
+  content: ""; display: inline-block; vertical-align: -2px;
+  width: 12px; height: 12px; margin-left: 8px;
+  border: 2px solid #ffffff55; border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* visible keyboard focus, unaffected by the reduced-motion switch */
+.fb-chip:focus-visible, .buy:focus-visible, .empty-chip:focus-visible,
+.offer-extra:focus-visible, .link-btn:focus-visible, .search-bar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .block-enter { opacity: 1; }
+  .thumb img { opacity: 1; }
+  .detail-reveal { grid-template-rows: 1fr; }
+}

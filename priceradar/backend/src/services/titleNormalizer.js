@@ -31,6 +31,11 @@ const COLOR_RE = new RegExp(
   "gi"
 );
 
+/**
+ * Build the model slug from an already-scrubbed title head. The caller is
+ * responsible for truncating marketing copy (see `slugSource` in
+ * normalizeTitle) — this only strips brand names, attributes and filler.
+ */
 function modelSlug(clean, brand) {
   let t = " " + clean + " ";
   const names = BRAND_NAME_TOKENS[brand] || (brand ? [brand] : []);
@@ -42,7 +47,7 @@ function modelSlug(clean, brand) {
     .replace(/\d+(?:\.\d+)?\s*(gb|tb|mah|mp|hz|inch|cm|nits|watt|w|k)\b/gi, " ")
     .replace(/\b\d+\s*\+\s*\d+\b/g, " ")
     .replace(
-      /\b(5g|4g|lte|wi-?fi|cellular|dual|sim|ram|rom|storage|internal|smartphone|mobile|phone|tablet|laptop|with|and|the|new|latest|model|edition|series|generation|gen)\b/gi,
+      /\b(5g|4g|lte|wi-?fi|cellular|dual|sim|ram|rom|storage|internal|smartphone|mobile|phone|tablet|laptop|with|and|the|new|latest|model|edition|series|generation|gen|ai)\b/gi,
       " "
     )
     .replace(COLOR_RE, " ")
@@ -59,12 +64,21 @@ export function normalizeTitle(rawTitle) {
   // Extract attributes BEFORE stripping noise — "renewed" lives in the noise list.
   const attrs = extractAttrs(lowered);
 
-  let clean = lowered;
-  for (const re of NOISE_PATTERNS) clean = clean.replace(re, " ");
-  clean = clean.replace(/[^a-z0-9+".\-\s()]/g, " ").replace(/\s+/g, " ").trim();
+  const scrub = (text) => {
+    let out = text;
+    for (const re of NOISE_PATTERNS) out = out.replace(re, " ");
+    return out.replace(/[^a-z0-9+".\-\s()]/g, " ").replace(/\s+/g, " ").trim();
+  };
+
+  const clean = scrub(lowered);
+
+  // The slug is built from the head of the title only. Truncation happens on
+  // `lowered`, before punctuation is scrubbed away, because the ":" / "|" that
+  // marks where marketing copy begins would otherwise already be gone.
+  const slugSource = scrub(lowered.split(/[:|]/)[0]);
 
   const { brand, aliases } = detectBrand(clean);
-  const slug = modelSlug(clean, brand);
+  const slug = modelSlug(slugSource, brand) || modelSlug(clean, brand);
 
   return { raw, clean, attrs, brand, aliases, slug };
 }

@@ -112,8 +112,8 @@ export default function App() {
         <>
           {freshness && <p className="freshness">Prices as of {freshness}</p>}
           <div className="block-stack">
-            {results.map((product) => (
-              <ComparisonBlock key={product.id} product={product} {...blockProps} />
+            {results.map((product, i) => (
+              <ComparisonBlock key={product.id} product={product} index={i} {...blockProps} />
             ))}
           </div>
         </>
@@ -124,8 +124,8 @@ export default function App() {
           <h3>Other variants</h3>
           <p className="ov-sub">Same model, a different storage / colour / connectivity than you searched for.</p>
           <div className="block-stack">
-            {otherVariants.map((product) => (
-              <ComparisonBlock key={product.id} product={product} {...blockProps} />
+            {otherVariants.map((product, i) => (
+              <ComparisonBlock key={product.id} product={product} index={i} {...blockProps} />
             ))}
           </div>
         </section>

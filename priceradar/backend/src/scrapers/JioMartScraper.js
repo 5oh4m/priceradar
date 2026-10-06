@@ -56,6 +56,7 @@ export class JioMartScraper extends BaseScraper {
   }
 
   async _fallbackSearch(query) {
+    if (!this.allowBrowserFallback) return [];
     try {
       return await this.withBrowser(async (page) => {
       await page.goto(`https://www.jiomart.com/search/${encodeURIComponent(query)}`, {

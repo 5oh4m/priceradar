@@ -50,6 +50,7 @@ export class SangeethaScraper extends BaseScraper {
   }
 
   async _fallbackSearch(query) {
+    if (!this.allowBrowserFallback) return [];
     try {
       return await this.withBrowser(async (page) => {
       await page.goto(`https://www.sangeethamobiles.com/search?q=${encodeURIComponent(query)}`, {

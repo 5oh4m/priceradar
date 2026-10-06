@@ -142,15 +142,15 @@ Affiliate API) where available — they're more stable and don't carry ToS risk.
 
 | Slug | Store | Tier | Extraction | Status |
 |---|---|---|---|---|
-| `amazon_in` | Amazon.in | Marketplace | Playwright | selectors need tuning |
+| `amazon_in` | Amazon.in | Marketplace | Playwright | working |
 | `flipkart` | Flipkart | Marketplace | Playwright | selectors need tuning |
-| `croma` | Croma | Authorised | JSON API + Playwright | working |
+| `croma` | Croma | Authorised | JSON API | endpoint returning empty |
 | `reliance_digital` | Reliance Digital | Authorised | JSON API | working |
-| `vijay_sales` | Vijay Sales | Authorised | Unbxd API + Playwright | working |
-| `tata_cliq` | Tata CLiQ | Marketplace | search BFF + Playwright | endpoint params need tuning |
-| `jiomart` | JioMart | Marketplace | Algolia (`JIOMART_ALGOLIA_KEY`) + Playwright | needs Algolia key |
-| `sangeetha` | Sangeetha Mobiles | Authorised | storefront API + Playwright | endpoint host need tuning |
-| `poorvika` | Poorvika | Authorised | storefront API + Playwright | endpoint host need tuning |
+| `vijay_sales` | Vijay Sales | Authorised | Unbxd API | working |
+| `tata_cliq` | Tata CLiQ | Marketplace | search BFF | endpoint params need tuning |
+| `jiomart` | JioMart | Marketplace | Algolia (`JIOMART_ALGOLIA_KEY`) | needs Algolia key |
+| `sangeetha` | Sangeetha Mobiles | Authorised | storefront API | endpoint host need tuning |
+| `poorvika` | Poorvika | Authorised | storefront API | endpoint host need tuning |
 
 The four newest adapters are wired end to end — registered in
 `scrapers/index.js`, metadata in `storeMeta.js`, bank-offer coverage in
@@ -163,6 +163,11 @@ same tuning Amazon and Flipkart need.
 is open.
 
 ## Scraper hardening
+
+- **Browser fallback is opt-out per adapter** (`allowBrowserFallback`). Adapters
+  whose Playwright fallback cannot currently succeed have it disabled in
+  `scrapers/index.js`, so a failed API call returns immediately instead of
+  spending the full per-store timeout launching a browser for nothing.
 
 - **Per-store search timeout** (`SCRAPE_SEARCH_TIMEOUT_MS`, default 12s) — one
   slow store can no longer hold up the whole search.
